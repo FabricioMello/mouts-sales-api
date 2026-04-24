@@ -109,6 +109,9 @@ public class Sale : BaseEntity
 
         if (_items.Count == 0)
             throw new InvalidOperationException("Sale must have at least one item");
+
+        if (_items.Select(item => item.ProductId).Distinct().Count() != _items.Count)
+            throw new InvalidOperationException("Sale cannot contain duplicated products");
     }
 
     private void RecalculateTotal()
