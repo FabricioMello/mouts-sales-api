@@ -71,4 +71,54 @@ public class SaleTests
 
         Assert.Equal("Cancelled sales cannot be modified", exception.Message);
     }
+
+    [Fact(DisplayName = "Sale should not allow duplicated products")]
+    public void Given_DuplicatedProductItems_When_CreatingSale_Then_ShouldThrowException()
+    {
+        var productId = Guid.NewGuid();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            new Sale(
+                "SALE-001",
+                DateTime.UtcNow,
+                Guid.NewGuid(),
+                "Customer",
+                Guid.NewGuid(),
+                "Branch",
+                [
+                    new SaleItem(productId, "Product", 10, 10m),
+                    new SaleItem(productId, "Product", 10, 10m)
+                ]));
+
+        Assert.Equal("Sale cannot contain duplicated products", exception.Message);
+    }
+
+    [Fact(DisplayName = "Sale update should not allow duplicated products")]
+    public void Given_DuplicatedProductItems_When_UpdatingSale_Then_ShouldThrowException()
+    {
+        var sale = new Sale(
+            "SALE-001",
+            DateTime.UtcNow,
+            Guid.NewGuid(),
+            "Customer",
+            Guid.NewGuid(),
+            "Branch",
+            [new SaleItem(Guid.NewGuid(), "Product", 4, 10m)]);
+        var productId = Guid.NewGuid();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            sale.UpdateDetails(
+                "SALE-001",
+                DateTime.UtcNow,
+                Guid.NewGuid(),
+                "Customer",
+                Guid.NewGuid(),
+                "Branch",
+                [
+                    new SaleItem(productId, "Product", 10, 10m),
+                    new SaleItem(productId, "Product", 10, 10m)
+                ]));
+
+        Assert.Equal("Sale cannot contain duplicated products", exception.Message);
+    }
 }
