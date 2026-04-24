@@ -73,6 +73,23 @@ public class Sale : BaseEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void CancelItem(Guid itemId)
+    {
+        if (IsCancelled)
+            throw new InvalidOperationException("Cancelled sales cannot be modified");
+
+        var item = _items.FirstOrDefault(item => item.Id == itemId);
+        if (item is null)
+            throw new InvalidOperationException("Sale item not found");
+
+        if (item.IsCancelled)
+            throw new InvalidOperationException("Sale item is already cancelled");
+
+        item.Cancel();
+        RecalculateTotalFromActiveItems();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     private void Validate()
     {
         if (string.IsNullOrWhiteSpace(SaleNumber))
@@ -97,6 +114,13 @@ public class Sale : BaseEntity
     private void RecalculateTotal()
     {
         TotalAmount = _items.Sum(item => item.TotalAmount);
+    }
+
+    private void RecalculateTotalFromActiveItems()
+    {
+        TotalAmount = _items
+            .Where(item => !item.IsCancelled)
+            .Sum(item => item.TotalAmount);
     }
 
     private static DateTime NormalizeDate(DateTime date)
