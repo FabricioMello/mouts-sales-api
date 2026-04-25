@@ -5,7 +5,7 @@ namespace Ambev.DeveloperEvaluation.Domain.Entities;
 
 public class SaleItem : BaseEntity
 {
-    public Guid SaleId { get; set; }
+    public Guid SaleId { get; private set; }
     public Guid ProductId { get; private set; }
     public string ProductName { get; private set; } = string.Empty;
     public int Quantity { get; private set; }
@@ -15,7 +15,7 @@ public class SaleItem : BaseEntity
     public decimal TotalAmount { get; private set; }
     public bool IsCancelled { get; private set; }
 
-    public Sale Sale { get; set; } = null!;
+    public Sale Sale { get; private set; } = null!;
 
     private SaleItem()
     {
