@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Application.Sales.Events.Notifications;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
@@ -12,12 +13,14 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
+    private readonly IMediator _mediator;
     private readonly ILogger<CreateSaleHandler> _logger;
 
-    public CreateSaleHandler(ISaleRepository saleRepository, IMapper mapper, ILogger<CreateSaleHandler> logger)
+    public CreateSaleHandler(ISaleRepository saleRepository, IMapper mapper, IMediator mediator, ILogger<CreateSaleHandler> logger)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -44,12 +47,17 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
             command.Items.Select(item => new SaleItem(item.ProductId, item.ProductName, item.Quantity, item.UnitPrice)));
 
         var createdSale = await _saleRepository.CreateAsync(sale, cancellationToken);
-        _logger.LogInformation(
-            "Event {EventName}: sale {SaleId} ({SaleNumber}) created with total {TotalAmount}",
-            "SaleCreated",
+
+        await _mediator.Publish(new SaleCreatedEvent(
             createdSale.Id,
             createdSale.SaleNumber,
-            createdSale.TotalAmount);
+            createdSale.CustomerId,
+            createdSale.CustomerName,
+            createdSale.BranchId,
+            createdSale.BranchName,
+            createdSale.TotalAmount,
+            createdSale.Items.Count,
+            DateTime.UtcNow), cancellationToken);
 
         return _mapper.Map<SaleResult>(createdSale);
     }

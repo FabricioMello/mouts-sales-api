@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Application.Sales.Events.Notifications;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
@@ -11,12 +12,14 @@ public class CancelSaleHandler : IRequestHandler<CancelSaleCommand, SaleResult>
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
+    private readonly IMediator _mediator;
     private readonly ILogger<CancelSaleHandler> _logger;
 
-    public CancelSaleHandler(ISaleRepository saleRepository, IMapper mapper, ILogger<CancelSaleHandler> logger)
+    public CancelSaleHandler(ISaleRepository saleRepository, IMapper mapper, IMediator mediator, ILogger<CancelSaleHandler> logger)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -30,11 +33,11 @@ public class CancelSaleHandler : IRequestHandler<CancelSaleCommand, SaleResult>
 
         sale.Cancel();
         var cancelledSale = await _saleRepository.UpdateAsync(sale, cancellationToken);
-        _logger.LogInformation(
-            "Event {EventName}: sale {SaleId} ({SaleNumber}) cancelled",
-            "SaleCancelled",
+
+        await _mediator.Publish(new SaleCancelledEvent(
             cancelledSale.Id,
-            cancelledSale.SaleNumber);
+            cancelledSale.SaleNumber,
+            DateTime.UtcNow), cancellationToken);
 
         return _mapper.Map<SaleResult>(cancelledSale);
     }

@@ -1,10 +1,12 @@
 using Ambev.DeveloperEvaluation.Application.Sales.CancelSaleItem;
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
+using Ambev.DeveloperEvaluation.Application.Sales.Events.Notifications;
 using Ambev.DeveloperEvaluation.Application.Sales.ListSales;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
@@ -13,13 +15,14 @@ namespace Ambev.DeveloperEvaluation.Unit.Application.Sales;
 
 public class SaleHandlerTests
 {
-    [Fact(DisplayName = "Create sale handler should persist sale and log created event")]
-    public async Task Given_ValidCommand_When_CreatingSale_Then_ShouldPersistAndLogEvent()
+    [Fact(DisplayName = "Create sale handler should persist sale and publish SaleCreatedEvent")]
+    public async Task Given_ValidCommand_When_CreatingSale_Then_ShouldPersistAndPublishEvent()
     {
         var repository = Substitute.For<ISaleRepository>();
         var mapper = Substitute.For<IMapper>();
+        var mediator = Substitute.For<IMediator>();
         var logger = new ListLogger<CreateSaleHandler>();
-        var handler = new CreateSaleHandler(repository, mapper, logger);
+        var handler = new CreateSaleHandler(repository, mapper, mediator, logger);
         var command = CreateValidCreateSaleCommand();
 
         repository.GetBySaleNumberAsync(command.SaleNumber, Arg.Any<CancellationToken>())
@@ -36,16 +39,21 @@ public class SaleHandlerTests
         await handler.Handle(command, CancellationToken.None);
 
         await repository.Received(1).CreateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
-        Assert.Contains(logger.Messages, message => message.Contains("SaleCreated"));
+        await mediator.Received(1).Publish(Arg.Is<SaleCreatedEvent>(e =>
+            e.SaleNumber == command.SaleNumber &&
+            e.CustomerId == command.CustomerId &&
+            e.BranchId == command.BranchId &&
+            e.ItemCount == command.Items.Count), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Cancel sale item handler should update sale and log item cancelled event")]
-    public async Task Given_ValidCommand_When_CancellingSaleItem_Then_ShouldUpdateAndLogEvent()
+    [Fact(DisplayName = "Cancel sale item handler should update sale and publish SaleItemCancelledEvent")]
+    public async Task Given_ValidCommand_When_CancellingSaleItem_Then_ShouldUpdateAndPublishEvent()
     {
         var repository = Substitute.For<ISaleRepository>();
         var mapper = Substitute.For<IMapper>();
+        var mediator = Substitute.For<IMediator>();
         var logger = new ListLogger<CancelSaleItemHandler>();
-        var handler = new CancelSaleItemHandler(repository, mapper, logger);
+        var handler = new CancelSaleItemHandler(repository, mapper, mediator, logger);
         var itemToCancel = new SaleItem(Guid.NewGuid(), "Product 1", 4, 10m) { Id = Guid.NewGuid() };
         var activeItem = new SaleItem(Guid.NewGuid(), "Product 2", 10, 10m) { Id = Guid.NewGuid() };
         var sale = new Sale(
@@ -72,7 +80,11 @@ public class SaleHandlerTests
 
         await repository.Received(1).UpdateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
         Assert.Equal(80m, sale.TotalAmount);
-        Assert.Contains(logger.Messages, message => message.Contains("SaleItemCancelled"));
+        await mediator.Received(1).Publish(Arg.Is<SaleItemCancelledEvent>(e =>
+            e.SaleId == sale.Id &&
+            e.ItemId == itemToCancel.Id &&
+            e.ProductName == "Product 1" &&
+            e.NewSaleTotal == 80m), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "List sales handler should normalize date filters to UTC")]

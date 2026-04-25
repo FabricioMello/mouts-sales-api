@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Application.Sales.Events.Notifications;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
@@ -11,12 +12,14 @@ public class CancelSaleItemHandler : IRequestHandler<CancelSaleItemCommand, Sale
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
+    private readonly IMediator _mediator;
     private readonly ILogger<CancelSaleItemHandler> _logger;
 
-    public CancelSaleItemHandler(ISaleRepository saleRepository, IMapper mapper, ILogger<CancelSaleItemHandler> logger)
+    public CancelSaleItemHandler(ISaleRepository saleRepository, IMapper mapper, IMediator mediator, ILogger<CancelSaleItemHandler> logger)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -30,13 +33,15 @@ public class CancelSaleItemHandler : IRequestHandler<CancelSaleItemCommand, Sale
 
         sale.CancelItem(command.ItemId);
         var updatedSale = await _saleRepository.UpdateAsync(sale, cancellationToken);
-        _logger.LogInformation(
-            "Event {EventName}: item {ItemId} from sale {SaleId} ({SaleNumber}) cancelled. New sale total is {TotalAmount}",
-            "SaleItemCancelled",
-            command.ItemId,
+
+        var cancelledItem = updatedSale.Items.First(i => i.Id == command.ItemId);
+        await _mediator.Publish(new SaleItemCancelledEvent(
             updatedSale.Id,
             updatedSale.SaleNumber,
-            updatedSale.TotalAmount);
+            command.ItemId,
+            cancelledItem.ProductName,
+            updatedSale.TotalAmount,
+            DateTime.UtcNow), cancellationToken);
 
         return _mapper.Map<SaleResult>(updatedSale);
     }

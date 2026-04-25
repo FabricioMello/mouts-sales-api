@@ -12,6 +12,7 @@ services:
       - MongoDb__ConnectionString=mongodb://developer:ev%40luAt10n@ambev_developer_evaluation_nosql:27017
       - MongoDb__DatabaseName=developer_evaluation
       - Redis__ConnectionString=ambev_developer_evaluation_cache:6379,password=ev@luAt10n
+      - RabbitMq__ConnectionString=amqp://developer:ev%40luAt10n@ambev_developer_evaluation_messagebroker:5672
     ports:
       - "8080:8080"
     depends_on:
@@ -21,6 +22,8 @@ services:
         condition: service_started
       ambev.developerevaluation.cache:
         condition: service_started
+      ambev.developerevaluation.messagebroker:
+        condition: service_healthy
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
@@ -51,8 +54,23 @@ services:
     ports:
       - "27017:27017"
 
+  ambev.developerevaluation.messagebroker:
+    container_name: ambev_developer_evaluation_messagebroker
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: developer
+      RABBITMQ_DEFAULT_PASS: ev@luAt10n
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   ambev.developerevaluation.cache:
-    container_name: ambev_developer_evaluation_cache 
+    container_name: ambev_developer_evaluation_cache
     image: redis:7.4.1-alpine     
     command: redis-server --requirepass ev@luAt10n
     ports:
