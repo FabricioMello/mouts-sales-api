@@ -85,6 +85,7 @@ public class SalesController : BaseController
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponseWithData<SaleResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateSale([FromBody] CreateSaleRequest request, CancellationToken cancellationToken)
     {
         var command = _mapper.Map<CreateSaleCommand>(request);
@@ -102,6 +103,7 @@ public class SalesController : BaseController
     [ProducesResponseType(typeof(ApiResponseWithData<SaleResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateSale([FromRoute] Guid id, [FromBody] UpdateSaleRequest request, CancellationToken cancellationToken)
     {
         var command = _mapper.Map<UpdateSaleCommand>(request);
@@ -136,6 +138,7 @@ public class SalesController : BaseController
     [ProducesResponseType(typeof(ApiResponseWithData<SaleResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CancelSaleItem(
         [FromRoute] Guid saleId,
         [FromRoute] Guid itemId,

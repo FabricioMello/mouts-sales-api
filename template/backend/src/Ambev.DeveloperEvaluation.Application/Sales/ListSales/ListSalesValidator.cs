@@ -14,11 +14,11 @@ public class ListSalesValidator : AbstractValidator<ListSalesCommand>
             .When(x => x.SaleNumber is not null);
 
         RuleFor(x => x.CustomerName)
-            .MaximumLength(200)
+            .MaximumLength(100)
             .When(x => x.CustomerName is not null);
 
         RuleFor(x => x.BranchName)
-            .MaximumLength(200)
+            .MaximumLength(100)
             .When(x => x.BranchName is not null);
 
         RuleFor(x => x.SaleDateTo)

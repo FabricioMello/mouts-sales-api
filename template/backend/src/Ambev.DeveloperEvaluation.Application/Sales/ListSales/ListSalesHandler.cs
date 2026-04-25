@@ -34,8 +34,8 @@ public class ListSalesHandler : IRequestHandler<ListSalesCommand, PagedResult<Sa
             BranchId = command.BranchId,
             BranchName = command.BranchName,
             IsCancelled = command.IsCancelled,
-            SaleDateFrom = command.SaleDateFrom,
-            SaleDateTo = command.SaleDateTo,
+            SaleDateFrom = NormalizeDate(command.SaleDateFrom),
+            SaleDateTo = NormalizeDate(command.SaleDateTo),
         };
 
         var (sales, totalCount) = await _saleRepository.ListAsync(command.Page, command.Size, filter, cancellationToken);
@@ -47,5 +47,15 @@ public class ListSalesHandler : IRequestHandler<ListSalesCommand, PagedResult<Sa
             TotalPages = (int)Math.Ceiling(totalCount / (double)command.Size),
             TotalCount = totalCount
         };
+    }
+
+    private static DateTime? NormalizeDate(DateTime? date)
+    {
+        if (!date.HasValue)
+            return null;
+
+        return date.Value.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(date.Value, DateTimeKind.Utc)
+            : date.Value.ToUniversalTime();
     }
 }
