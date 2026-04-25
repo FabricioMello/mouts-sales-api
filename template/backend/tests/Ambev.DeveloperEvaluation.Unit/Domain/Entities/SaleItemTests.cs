@@ -45,6 +45,48 @@ public class SaleItemTests
         Assert.Equal("It is not possible to sell more than 20 identical items", exception.Message);
     }
 
+    [Theory(DisplayName = "Quantity lower than one should not be allowed")]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Given_QuantityLowerThanOne_When_CreatingSaleItem_Then_ShouldThrowException(int quantity)
+    {
+        var exception = Assert.Throws<DomainException>(() =>
+            new SaleItem(Guid.NewGuid(), "Product", quantity, 10m));
+
+        Assert.Equal("Sale item quantity must be greater than zero", exception.Message);
+    }
+
+    [Theory(DisplayName = "Unit price lower than or equal to zero should not be allowed")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    public void Given_InvalidUnitPrice_When_CreatingSaleItem_Then_ShouldThrowException(string unitPrice)
+    {
+        var exception = Assert.Throws<DomainException>(() =>
+            new SaleItem(Guid.NewGuid(), "Product", 1, decimal.Parse(unitPrice)));
+
+        Assert.Equal("Sale item unit price must be greater than zero", exception.Message);
+    }
+
+    [Fact(DisplayName = "Quantity twenty should be allowed with twenty percent discount")]
+    public void Given_QuantityTwenty_When_CreatingSaleItem_Then_ShouldApplyTwentyPercentDiscount()
+    {
+        var item = new SaleItem(Guid.NewGuid(), "Product", 20, 10m);
+
+        Assert.Equal(20m, item.DiscountPercentage);
+        Assert.Equal(40m, item.DiscountAmount);
+        Assert.Equal(160m, item.TotalAmount);
+    }
+
+    [Fact(DisplayName = "Quantity nine should keep ten percent discount")]
+    public void Given_QuantityNine_When_CreatingSaleItem_Then_ShouldApplyTenPercentDiscount()
+    {
+        var item = new SaleItem(Guid.NewGuid(), "Product", 9, 10m);
+
+        Assert.Equal(10m, item.DiscountPercentage);
+        Assert.Equal(9m, item.DiscountAmount);
+        Assert.Equal(81m, item.TotalAmount);
+    }
+
     [Fact(DisplayName = "Cancelled item should keep calculated monetary values")]
     public void Given_ValidSaleItem_When_Cancelling_Then_ShouldKeepCalculatedAmounts()
     {

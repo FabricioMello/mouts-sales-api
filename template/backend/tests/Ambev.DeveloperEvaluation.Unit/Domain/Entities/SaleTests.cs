@@ -94,4 +94,71 @@ public class SaleTests
         Assert.Equal("Sale cannot contain duplicated products", exception.Message);
     }
 
+    [Fact(DisplayName = "Sale with no items should not be allowed")]
+    public void Given_NoItems_When_CreatingSale_Then_ShouldThrowException()
+    {
+        var exception = Assert.Throws<DomainException>(() =>
+            new Sale(
+                "SALE-001",
+                DateTime.UtcNow,
+                Guid.NewGuid(),
+                "Customer",
+                Guid.NewGuid(),
+                "Branch",
+                []));
+
+        Assert.Equal("Sale must have at least one item", exception.Message);
+    }
+
+    [Fact(DisplayName = "Sale should set created date when created")]
+    public void Given_ValidSale_When_Creating_Then_ShouldSetCreatedAt()
+    {
+        var sale = CreateValidSale();
+
+        Assert.NotEqual(default, sale.CreatedAt);
+        Assert.Null(sale.UpdatedAt);
+    }
+
+    [Fact(DisplayName = "Cancelling unknown item should throw entity not found")]
+    public void Given_UnknownItem_When_CancellingItem_Then_ShouldThrowException()
+    {
+        var itemId = Guid.NewGuid();
+        var sale = CreateValidSale();
+
+        var exception = Assert.Throws<EntityNotFoundException>(() => sale.CancelItem(itemId));
+
+        Assert.Equal("SaleItem", exception.EntityName);
+        Assert.Equal(itemId, exception.EntityId);
+    }
+
+    [Fact(DisplayName = "Cancelling already cancelled item should throw business rule violation")]
+    public void Given_AlreadyCancelledItem_When_CancellingItem_Then_ShouldThrowException()
+    {
+        var item = new SaleItem(Guid.NewGuid(), "Product", 4, 10m) { Id = Guid.NewGuid() };
+        var sale = new Sale(
+            "SALE-001",
+            DateTime.UtcNow,
+            Guid.NewGuid(),
+            "Customer",
+            Guid.NewGuid(),
+            "Branch",
+            [item]);
+        sale.CancelItem(item.Id);
+
+        var exception = Assert.Throws<BusinessRuleViolationException>(() => sale.CancelItem(item.Id));
+
+        Assert.Equal("Sale item is already cancelled", exception.Message);
+    }
+
+    private static Sale CreateValidSale()
+    {
+        return new Sale(
+            "SALE-001",
+            DateTime.UtcNow,
+            Guid.NewGuid(),
+            "Customer",
+            Guid.NewGuid(),
+            "Branch",
+            [new SaleItem(Guid.NewGuid(), "Product", 4, 10m)]);
+    }
 }
