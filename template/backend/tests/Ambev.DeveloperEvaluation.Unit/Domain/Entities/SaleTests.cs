@@ -73,6 +73,17 @@ public class SaleTests
         Assert.Equal("Cancelled sales cannot be modified", exception.Message);
     }
 
+    [Fact(DisplayName = "Cancelling already cancelled sale should throw business rule violation")]
+    public void Given_CancelledSale_When_CancellingAgain_Then_ShouldThrowException()
+    {
+        var sale = CreateValidSale();
+        sale.Cancel();
+
+        var exception = Assert.Throws<BusinessRuleViolationException>(() => sale.Cancel());
+
+        Assert.Equal("Sale is already cancelled", exception.Message);
+    }
+
     [Fact(DisplayName = "Sale should not allow duplicated products")]
     public void Given_DuplicatedProductItems_When_CreatingSale_Then_ShouldThrowException()
     {

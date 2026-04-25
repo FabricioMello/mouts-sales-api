@@ -50,6 +50,9 @@ public class Sale : BaseEntity
 
     public void Cancel()
     {
+        if (IsCancelled)
+            throw new BusinessRuleViolationException("Sale is already cancelled");
+
         IsCancelled = true;
 
         foreach (var item in _items)
