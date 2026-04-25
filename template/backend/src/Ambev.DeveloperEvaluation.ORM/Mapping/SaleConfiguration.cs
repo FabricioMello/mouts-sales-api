@@ -26,6 +26,11 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(sale => sale.CreatedAt).IsRequired();
         builder.Property(sale => sale.UpdatedAt);
 
+        builder.HasIndex(sale => sale.CustomerId);
+        builder.HasIndex(sale => sale.BranchId);
+        builder.HasIndex(sale => sale.SaleDate).IsDescending();
+        builder.HasIndex(sale => sale.IsCancelled);
+
         builder
             .HasMany(sale => sale.Items)
             .WithOne(item => item.Sale)

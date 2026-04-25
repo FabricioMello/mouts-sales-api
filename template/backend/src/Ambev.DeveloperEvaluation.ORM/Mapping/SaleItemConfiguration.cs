@@ -22,5 +22,8 @@ public class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
         builder.Property(item => item.DiscountAmount).HasPrecision(18, 2);
         builder.Property(item => item.TotalAmount).HasPrecision(18, 2);
         builder.Property(item => item.IsCancelled).IsRequired();
+
+        builder.HasIndex(item => item.SaleId);
+        builder.HasIndex(item => item.ProductId);
     }
 }
