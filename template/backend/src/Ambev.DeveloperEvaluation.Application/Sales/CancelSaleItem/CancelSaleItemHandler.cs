@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -27,7 +28,7 @@ public class CancelSaleItemHandler : IRequestHandler<CancelSaleItemCommand, Sale
 
         var sale = await _saleRepository.GetByIdAsync(command.SaleId, cancellationToken);
         if (sale is null)
-            throw new KeyNotFoundException($"Sale with ID {command.SaleId} not found");
+            throw new EntityNotFoundException("Sale", command.SaleId);
 
         sale.CancelItem(command.ItemId);
         var updatedSale = await _saleRepository.UpdateAsync(sale, cancellationToken);

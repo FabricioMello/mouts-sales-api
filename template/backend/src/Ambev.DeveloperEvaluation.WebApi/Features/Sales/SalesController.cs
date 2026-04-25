@@ -32,9 +32,31 @@ public class SalesController : BaseController
     public async Task<IActionResult> ListSales(
         [FromQuery(Name = "_page")] int page = 1,
         [FromQuery(Name = "_size")] int size = 10,
+        [FromQuery(Name = "_saleNumber")] string? saleNumber = null,
+        [FromQuery(Name = "_customerId")] Guid? customerId = null,
+        [FromQuery(Name = "_customerName")] string? customerName = null,
+        [FromQuery(Name = "_branchId")] Guid? branchId = null,
+        [FromQuery(Name = "_branchName")] string? branchName = null,
+        [FromQuery(Name = "_isCancelled")] bool? isCancelled = null,
+        [FromQuery(Name = "_saleDateFrom")] DateTime? saleDateFrom = null,
+        [FromQuery(Name = "_saleDateTo")] DateTime? saleDateTo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _mediator.Send(new ListSalesCommand { Page = page, Size = size }, cancellationToken);
+        var command = new ListSalesCommand
+        {
+            Page = page,
+            Size = size,
+            SaleNumber = saleNumber,
+            CustomerId = customerId,
+            CustomerName = customerName,
+            BranchId = branchId,
+            BranchName = branchName,
+            IsCancelled = isCancelled,
+            SaleDateFrom = saleDateFrom,
+            SaleDateTo = saleDateTo,
+        };
+
+        var result = await _mediator.Send(command, cancellationToken);
 
         return Ok(new PaginatedResponse<SaleResponse>
         {
@@ -51,20 +73,13 @@ public class SalesController : BaseController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSale([FromRoute] Guid id, CancellationToken cancellationToken)
     {
-        try
+        var result = await _mediator.Send(new GetSaleCommand(id), cancellationToken);
+        return Ok(new ApiResponseWithData<SaleResponse>
         {
-            var result = await _mediator.Send(new GetSaleCommand(id), cancellationToken);
-            return Ok(new ApiResponseWithData<SaleResponse>
-            {
-                Success = true,
-                Message = "Sale retrieved successfully",
-                Data = _mapper.Map<SaleResponse>(result)
-            });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+            Success = true,
+            Message = "Sale retrieved successfully",
+            Data = _mapper.Map<SaleResponse>(result)
+        });
     }
 
     [HttpPost]
@@ -72,28 +87,15 @@ public class SalesController : BaseController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateSale([FromBody] CreateSaleRequest request, CancellationToken cancellationToken)
     {
-        var validator = new CreateSaleRequestValidator();
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        var command = _mapper.Map<CreateSaleCommand>(request);
+        var result = await _mediator.Send(command, cancellationToken);
 
-        if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
-
-        try
+        return Created(string.Empty, new ApiResponseWithData<SaleResponse>
         {
-            var command = _mapper.Map<CreateSaleCommand>(request);
-            var result = await _mediator.Send(command, cancellationToken);
-
-            return Created(string.Empty, new ApiResponseWithData<SaleResponse>
-            {
-                Success = true,
-                Message = "Sale created successfully",
-                Data = _mapper.Map<SaleResponse>(result)
-            });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+            Success = true,
+            Message = "Sale created successfully",
+            Data = _mapper.Map<SaleResponse>(result)
+        });
     }
 
     [HttpPut("{id}")]
@@ -102,34 +104,17 @@ public class SalesController : BaseController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateSale([FromRoute] Guid id, [FromBody] UpdateSaleRequest request, CancellationToken cancellationToken)
     {
-        var validator = new UpdateSaleRequestValidator();
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        var command = _mapper.Map<UpdateSaleCommand>(request);
+        command.Id = id;
 
-        if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+        var result = await _mediator.Send(command, cancellationToken);
 
-        try
+        return Ok(new ApiResponseWithData<SaleResponse>
         {
-            var command = _mapper.Map<UpdateSaleCommand>(request);
-            command.Id = id;
-
-            var result = await _mediator.Send(command, cancellationToken);
-
-            return Ok(new ApiResponseWithData<SaleResponse>
-            {
-                Success = true,
-                Message = "Sale updated successfully",
-                Data = _mapper.Map<SaleResponse>(result)
-            });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+            Success = true,
+            Message = "Sale updated successfully",
+            Data = _mapper.Map<SaleResponse>(result)
+        });
     }
 
     [HttpPatch("{id}/cancel")]
@@ -137,21 +122,14 @@ public class SalesController : BaseController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CancelSale([FromRoute] Guid id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _mediator.Send(new CancelSaleCommand(id), cancellationToken);
+        var result = await _mediator.Send(new CancelSaleCommand(id), cancellationToken);
 
-            return Ok(new ApiResponseWithData<SaleResponse>
-            {
-                Success = true,
-                Message = "Sale cancelled successfully",
-                Data = _mapper.Map<SaleResponse>(result)
-            });
-        }
-        catch (KeyNotFoundException ex)
+        return Ok(new ApiResponseWithData<SaleResponse>
         {
-            return NotFound(ex.Message);
-        }
+            Success = true,
+            Message = "Sale cancelled successfully",
+            Data = _mapper.Map<SaleResponse>(result)
+        });
     }
 
     [HttpPatch("{saleId}/items/{itemId}/cancel")]
@@ -163,24 +141,13 @@ public class SalesController : BaseController
         [FromRoute] Guid itemId,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _mediator.Send(new CancelSaleItemCommand(saleId, itemId), cancellationToken);
+        var result = await _mediator.Send(new CancelSaleItemCommand(saleId, itemId), cancellationToken);
 
-            return Ok(new ApiResponseWithData<SaleResponse>
-            {
-                Success = true,
-                Message = "Sale item cancelled successfully",
-                Data = _mapper.Map<SaleResponse>(result)
-            });
-        }
-        catch (KeyNotFoundException ex)
+        return Ok(new ApiResponseWithData<SaleResponse>
         {
-            return NotFound(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+            Success = true,
+            Message = "Sale item cancelled successfully",
+            Data = _mapper.Map<SaleResponse>(result)
+        });
     }
 }

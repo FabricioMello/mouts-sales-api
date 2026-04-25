@@ -26,8 +26,19 @@ public class ListSalesHandler : IRequestHandler<ListSalesCommand, PagedResult<Sa
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var sales = await _saleRepository.ListAsync(command.Page, command.Size, cancellationToken);
-        var totalCount = await _saleRepository.CountAsync(cancellationToken);
+        var filter = new SaleFilter
+        {
+            SaleNumber = command.SaleNumber,
+            CustomerId = command.CustomerId,
+            CustomerName = command.CustomerName,
+            BranchId = command.BranchId,
+            BranchName = command.BranchName,
+            IsCancelled = command.IsCancelled,
+            SaleDateFrom = command.SaleDateFrom,
+            SaleDateTo = command.SaleDateTo,
+        };
+
+        var (sales, totalCount) = await _saleRepository.ListAsync(command.Page, command.Size, filter, cancellationToken);
 
         return new PagedResult<SaleResult>
         {

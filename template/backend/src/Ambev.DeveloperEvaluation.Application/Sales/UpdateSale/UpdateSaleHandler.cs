@@ -1,5 +1,6 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -28,14 +29,14 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
 
         var sale = await _saleRepository.GetByIdAsync(command.Id, cancellationToken);
         if (sale is null)
-            throw new KeyNotFoundException($"Sale with ID {command.Id} not found");
+            throw new EntityNotFoundException("Sale", command.Id);
 
         if (sale.IsCancelled)
-            throw new InvalidOperationException("Cancelled sales cannot be updated");
+            throw new BusinessRuleViolationException("Cancelled sales cannot be updated");
 
         var existingSale = await _saleRepository.GetBySaleNumberAsync(command.SaleNumber, cancellationToken);
         if (existingSale is not null && existingSale.Id != command.Id)
-            throw new InvalidOperationException($"Sale with number {command.SaleNumber} already exists");
+            throw new BusinessRuleViolationException($"Sale with number {command.SaleNumber} already exists");
 
         sale.UpdateDetails(
             command.SaleNumber,

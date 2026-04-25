@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Domain.Common;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 
 namespace Ambev.DeveloperEvaluation.Domain.Entities;
 
@@ -76,14 +77,14 @@ public class Sale : BaseEntity
     public void CancelItem(Guid itemId)
     {
         if (IsCancelled)
-            throw new InvalidOperationException("Cancelled sales cannot be modified");
+            throw new BusinessRuleViolationException("Cancelled sales cannot be modified");
 
         var item = _items.FirstOrDefault(item => item.Id == itemId);
         if (item is null)
-            throw new InvalidOperationException("Sale item not found");
+            throw new EntityNotFoundException("SaleItem", itemId);
 
         if (item.IsCancelled)
-            throw new InvalidOperationException("Sale item is already cancelled");
+            throw new BusinessRuleViolationException("Sale item is already cancelled");
 
         item.Cancel();
         RecalculateTotalFromActiveItems();
@@ -93,25 +94,25 @@ public class Sale : BaseEntity
     private void Validate()
     {
         if (string.IsNullOrWhiteSpace(SaleNumber))
-            throw new InvalidOperationException("Sale number is required");
+            throw new DomainException("Sale number is required");
 
         if (CustomerId == Guid.Empty)
-            throw new InvalidOperationException("Customer ID is required");
+            throw new DomainException("Customer ID is required");
 
         if (string.IsNullOrWhiteSpace(CustomerName))
-            throw new InvalidOperationException("Customer name is required");
+            throw new DomainException("Customer name is required");
 
         if (BranchId == Guid.Empty)
-            throw new InvalidOperationException("Branch ID is required");
+            throw new DomainException("Branch ID is required");
 
         if (string.IsNullOrWhiteSpace(BranchName))
-            throw new InvalidOperationException("Branch name is required");
+            throw new DomainException("Branch name is required");
 
         if (_items.Count == 0)
-            throw new InvalidOperationException("Sale must have at least one item");
+            throw new DomainException("Sale must have at least one item");
 
         if (_items.Select(item => item.ProductId).Distinct().Count() != _items.Count)
-            throw new InvalidOperationException("Sale cannot contain duplicated products");
+            throw new DomainException("Sale cannot contain duplicated products");
     }
 
     private void RecalculateTotal()

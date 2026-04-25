@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
@@ -38,7 +39,7 @@ public class SaleItemTests
     [Fact(DisplayName = "Quantity above twenty should not be allowed")]
     public void Given_QuantityAboveTwenty_When_CreatingSaleItem_Then_ShouldThrowException()
     {
-        var exception = Assert.Throws<InvalidOperationException>(() =>
+        var exception = Assert.Throws<DomainException>(() =>
             new SaleItem(Guid.NewGuid(), "Product", 21, 10m));
 
         Assert.Equal("It is not possible to sell more than 20 identical items", exception.Message);

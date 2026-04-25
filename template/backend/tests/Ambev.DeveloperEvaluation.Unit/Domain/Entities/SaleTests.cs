@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
@@ -67,7 +68,7 @@ public class SaleTests
 
         sale.Cancel();
 
-        var exception = Assert.Throws<InvalidOperationException>(() => sale.CancelItem(item.Id));
+        var exception = Assert.Throws<BusinessRuleViolationException>(() => sale.CancelItem(item.Id));
 
         Assert.Equal("Cancelled sales cannot be modified", exception.Message);
     }
@@ -77,7 +78,7 @@ public class SaleTests
     {
         var productId = Guid.NewGuid();
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
+        var exception = Assert.Throws<DomainException>(() =>
             new Sale(
                 "SALE-001",
                 DateTime.UtcNow,
@@ -106,7 +107,7 @@ public class SaleTests
             [new SaleItem(Guid.NewGuid(), "Product", 4, 10m)]);
         var productId = Guid.NewGuid();
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
+        var exception = Assert.Throws<DomainException>(() =>
             sale.UpdateDetails(
                 "SALE-001",
                 DateTime.UtcNow,

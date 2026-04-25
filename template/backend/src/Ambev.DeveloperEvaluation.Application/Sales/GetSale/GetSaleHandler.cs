@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -27,7 +28,7 @@ public class GetSaleHandler : IRequestHandler<GetSaleCommand, SaleResult>
 
         var sale = await _saleRepository.GetByIdAsync(command.Id, cancellationToken);
         if (sale is null)
-            throw new KeyNotFoundException($"Sale with ID {command.Id} not found");
+            throw new EntityNotFoundException("Sale", command.Id);
 
         return _mapper.Map<SaleResult>(sale);
     }

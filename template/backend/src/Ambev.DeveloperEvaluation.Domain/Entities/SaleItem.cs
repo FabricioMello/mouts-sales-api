@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Domain.Common;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 
 namespace Ambev.DeveloperEvaluation.Domain.Entities;
 
@@ -48,13 +49,13 @@ public class SaleItem : BaseEntity
     private void Recalculate()
     {
         if (Quantity <= 0)
-            throw new InvalidOperationException("Sale item quantity must be greater than zero");
+            throw new DomainException("Sale item quantity must be greater than zero");
 
         if (Quantity > 20)
-            throw new InvalidOperationException("It is not possible to sell more than 20 identical items");
+            throw new DomainException("It is not possible to sell more than 20 identical items");
 
         if (UnitPrice <= 0)
-            throw new InvalidOperationException("Sale item unit price must be greater than zero");
+            throw new DomainException("Sale item unit price must be greater than zero");
 
         DiscountPercentage = Quantity switch
         {
