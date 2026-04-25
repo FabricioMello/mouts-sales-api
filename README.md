@@ -1,77 +1,190 @@
-# Developer Evaluation Project
+# Mouts Sales API
 
-`READ CAREFULLY`
+API desenvolvida para o teste de avaliacao de backend, com foco no dominio de vendas, aplicacao de regras de desconto, cancelamento logico e publicacao de eventos.
 
-## Use Case
-**You are a developer on the DeveloperStore team. Now we need to implement the API prototypes.**
+## Objetivo
 
-As we work with `DDD`, to reference entities from other domains, we use the `External Identities` pattern with denormalization of entity descriptions.
+O projeto implementa uma API para registro e consulta de vendas.
 
-Therefore, you will write an API (complete CRUD) that handles sales records. The API needs to be able to inform:
+Uma venda possui numero, data, cliente, filial, itens, quantidades, precos, descontos, total por item, total da venda e status de cancelamento.
 
-* Sale number
-* Date when the sale was made
-* Customer
-* Total sale amount
-* Branch where the sale was made
-* Products
-* Quantities
-* Unit prices
-* Discounts
-* Total amount for each item
-* Cancelled/Not Cancelled
+As principais regras de negocio sao:
 
-It's not mandatory, but it would be a differential to build code for publishing events of:
-* SaleCreated
-* SaleModified
-* SaleCancelled
-* ItemCancelled
+- compras com menos de 4 unidades do mesmo produto nao recebem desconto;
+- compras com 4 a 9 unidades do mesmo produto recebem 10% de desconto;
+- compras com 10 a 20 unidades do mesmo produto recebem 20% de desconto;
+- nao e permitido vender mais de 20 unidades do mesmo produto;
+- uma venda nao pode ter mais de um item com o mesmo `ProductId`;
+- venda cancelada nao e apagada fisicamente;
+- item cancelado recalcula o total efetivo da venda;
+- venda ja cancelada nao pode ser cancelada novamente.
 
-If you write the code, **it's not required** to actually publish to any Message Broker. You can log a message in the application log or however you find most convenient.
+## Decisoes de dominio
 
-### Business Rules
+A venda foi tratada como um registro transacional. Por isso, a API nao possui `PUT` amplo nem `DELETE` fisico para vendas.
 
-* Purchases above 4 identical items have a 10% discount
-* Purchases between 10 and 20 identical items have a 20% discount
-* It's not possible to sell above 20 identical items
-* Purchases below 4 items cannot have a discount
+As alteracoes permitidas foram modeladas como operacoes explicitas:
 
-These business rules define quantity-based discounting tiers and limitations:
+- cancelar a venda inteira;
+- cancelar um item especifico da venda.
 
-1. Discount Tiers:
-   - 4+ items: 10% discount
-   - 10-20 items: 20% discount
+Essa abordagem preserva historico e evita reescrever uma venda depois que ela foi criada.
 
-2. Restrictions:
-   - Maximum limit: 20 items per product
-   - No discounts allowed for quantities below 4 items
+## Estrutura do projeto
 
-## Overview
-This section provides a high-level overview of the project and the various skills and competencies it aims to assess for developer candidates. 
+O backend esta em:
 
-See [Overview](/.doc/overview.md)
+```text
+template/backend
+```
 
-## Tech Stack
-This section lists the key technologies used in the project, including the backend, testing, frontend, and database components. 
+Principais projetos:
 
-See [Tech Stack](/.doc/tech-stack.md)
+```text
+src/Ambev.DeveloperEvaluation.Domain       Regras de dominio e entidades
+src/Ambev.DeveloperEvaluation.Application  Casos de uso, validacoes e eventos
+src/Ambev.DeveloperEvaluation.ORM          Persistencia com Entity Framework
+src/Ambev.DeveloperEvaluation.WebApi       Controllers, configuracao HTTP e RabbitMQ
+tests/Ambev.DeveloperEvaluation.Unit       Testes unitarios
+tests/Ambev.DeveloperEvaluation.Integration Testes de integracao
+```
 
-## Frameworks
-This section outlines the frameworks and libraries that are leveraged in the project to enhance development productivity and maintainability. 
+## Tecnologias
 
-See [Frameworks](/.doc/frameworks.md)
+- .NET 8
+- ASP.NET Core
+- Entity Framework Core
+- PostgreSQL
+- RabbitMQ
+- MediatR
+- AutoMapper
+- FluentValidation
+- xUnit
+- Testcontainers
+- Docker Compose
 
-<!-- 
-## API Structure
-This section includes links to the detailed documentation for the different API resources:
-- [API General](./docs/general-api.md)
-- [Products API](/.doc/products-api.md)
-- [Carts API](/.doc/carts-api.md)
-- [Users API](/.doc/users-api.md)
-- [Auth API](/.doc/auth-api.md)
--->
+## Como rodar com Docker
 
-## Project Structure
-This section describes the overall structure and organization of the project files and directories. 
+Pre-requisitos:
 
-See [Project Structure](/.doc/project-structure.md)
+- Docker Desktop
+- Git
+- Postman ou Insomnia para testes manuais
+- .NET SDK 8, apenas se quiser rodar testes localmente fora do Docker
+
+Entre na pasta do backend:
+
+```bash
+cd template/backend
+```
+
+Suba a aplicacao e as dependencias:
+
+```bash
+docker compose up -d --build
+```
+
+A API ficara disponivel em:
+
+```text
+http://localhost:8080
+```
+
+Swagger:
+
+```text
+http://localhost:8080/swagger
+```
+
+RabbitMQ Management:
+
+```text
+http://localhost:15672
+```
+
+Credenciais do RabbitMQ:
+
+```text
+usuario: developer
+senha: ev@luAt10n
+```
+
+Para parar o ambiente:
+
+```bash
+docker compose down
+```
+
+## Como testar manualmente
+
+Foi criada uma collection Postman para facilitar os testes:
+
+```text
+template/backend/Ambev.DeveloperEvaluation.postman_collection.json
+```
+
+Importe esse arquivo no Postman ou Insomnia.
+
+A collection possui as pastas:
+
+- `Auth`, com login e captura automatica do token JWT;
+- `Users`, com criacao, consulta e exclusao de usuario;
+- `Sales`, com listagem, criacao, consulta, cancelamento de item e cancelamento de venda.
+
+Fluxo sugerido:
+
+1. Execute `Users > Create user`.
+2. Execute `Auth > Login`.
+3. Execute `Sales > Create sale`.
+4. Execute `Sales > Get sale by id`.
+5. Execute `Sales > Cancel sale item`.
+6. Execute `Sales > Cancel sale`.
+
+Apos o login, o token JWT e salvo na variavel `authToken` e usado automaticamente pelos demais requests da collection.
+
+## Endpoints principais
+
+Auth:
+
+```text
+POST /api/Auth
+```
+
+Users:
+
+```text
+POST   /api/Users
+GET    /api/Users/{id}
+DELETE /api/Users/{id}
+```
+
+Sales:
+
+```text
+GET   /api/Sales
+GET   /api/Sales/{id}
+POST  /api/Sales
+PATCH /api/Sales/{id}/cancel
+PATCH /api/Sales/{saleId}/items/{itemId}/cancel
+```
+
+## Eventos
+
+A API publica eventos de venda via MediatR e RabbitMQ:
+
+- `SaleCreatedEvent`
+- `SaleCancelledEvent`
+- `SaleItemCancelledEvent`
+
+O evento `SaleModified` nao foi implementado porque a API nao possui update amplo de venda.
+
+## Testes automatizados
+
+Para rodar os testes localmente:
+
+```bash
+cd template/backend
+dotnet test Ambev.DeveloperEvaluation.sln
+```
+
+A suite cobre regras de dominio, validadores, handlers de vendas e publicacao de eventos no RabbitMQ usando Testcontainers.
