@@ -3,6 +3,7 @@ using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.ListSales;
 
@@ -10,11 +11,13 @@ public class ListSalesHandler : IRequestHandler<ListSalesCommand, PagedResult<Sa
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
+    private readonly ILogger<ListSalesHandler> _logger;
 
-    public ListSalesHandler(ISaleRepository saleRepository, IMapper mapper)
+    public ListSalesHandler(ISaleRepository saleRepository, IMapper mapper, ILogger<ListSalesHandler> logger)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<PagedResult<SaleResult>> Handle(ListSalesCommand command, CancellationToken cancellationToken)
@@ -31,7 +34,19 @@ public class ListSalesHandler : IRequestHandler<ListSalesCommand, PagedResult<Sa
             SaleDateTo = NormalizeDate(command.SaleDateTo),
         };
 
+        _logger.LogInformation(
+            "Listing sales page {Page} size {Size} with filters SaleNumber={SaleNumber}, CustomerId={CustomerId}, BranchId={BranchId}, IsCancelled={IsCancelled}, SaleDateFrom={SaleDateFrom}, SaleDateTo={SaleDateTo}",
+            command.Page,
+            command.Size,
+            filter.SaleNumber,
+            filter.CustomerId,
+            filter.BranchId,
+            filter.IsCancelled,
+            filter.SaleDateFrom,
+            filter.SaleDateTo);
+
         var (sales, totalCount) = await _saleRepository.ListAsync(command.Page, command.Size, filter, cancellationToken);
+        _logger.LogInformation("Listed {ReturnedCount} sales from {TotalCount} matching records", sales.Count, totalCount);
 
         return new PagedResult<SaleResult>
         {
