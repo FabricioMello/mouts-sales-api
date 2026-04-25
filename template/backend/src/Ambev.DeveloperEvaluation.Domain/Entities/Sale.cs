@@ -34,19 +34,6 @@ public class Sale : BaseEntity
         IEnumerable<SaleItem> items)
     {
         CreatedAt = DateTime.UtcNow;
-        UpdateDetails(saleNumber, saleDate, customerId, customerName, branchId, branchName, items, false);
-    }
-
-    public void UpdateDetails(
-        string saleNumber,
-        DateTime saleDate,
-        Guid customerId,
-        string customerName,
-        Guid branchId,
-        string branchName,
-        IEnumerable<SaleItem> items,
-        bool touchUpdatedAt = true)
-    {
         SaleNumber = saleNumber;
         SaleDate = NormalizeDate(saleDate);
         CustomerId = customerId;
@@ -59,9 +46,6 @@ public class Sale : BaseEntity
 
         Validate();
         RecalculateTotal();
-
-        if (touchUpdatedAt)
-            UpdatedAt = DateTime.UtcNow;
     }
 
     public void Cancel()

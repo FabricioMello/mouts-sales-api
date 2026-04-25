@@ -94,32 +94,4 @@ public class SaleTests
         Assert.Equal("Sale cannot contain duplicated products", exception.Message);
     }
 
-    [Fact(DisplayName = "Sale update should not allow duplicated products")]
-    public void Given_DuplicatedProductItems_When_UpdatingSale_Then_ShouldThrowException()
-    {
-        var sale = new Sale(
-            "SALE-001",
-            DateTime.UtcNow,
-            Guid.NewGuid(),
-            "Customer",
-            Guid.NewGuid(),
-            "Branch",
-            [new SaleItem(Guid.NewGuid(), "Product", 4, 10m)]);
-        var productId = Guid.NewGuid();
-
-        var exception = Assert.Throws<DomainException>(() =>
-            sale.UpdateDetails(
-                "SALE-001",
-                DateTime.UtcNow,
-                Guid.NewGuid(),
-                "Customer",
-                Guid.NewGuid(),
-                "Branch",
-                [
-                    new SaleItem(productId, "Product", 10, 10m),
-                    new SaleItem(productId, "Product", 10, 10m)
-                ]));
-
-        Assert.Equal("Sale cannot contain duplicated products", exception.Message);
-    }
 }

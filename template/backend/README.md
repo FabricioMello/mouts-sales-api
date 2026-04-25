@@ -140,6 +140,17 @@ Pelo `launchSettings.json`, a API local usa:
 - Swagger: `http://localhost:5119/swagger`
 - Health check: `http://localhost:5119/health`
 
+## Decisao de dominio sobre vendas
+
+Embora o enunciado mencione CRUD completo, esta implementacao trata venda como registro transacional. Depois de criada, uma venda nao pode ser alterada ou removida fisicamente por um `PUT` ou `DELETE` generico, porque isso reescreveria historico de numero, cliente, filial, itens, precos e descontos.
+
+As mudancas permitidas sao comandos explicitos de negocio:
+
+- `PATCH /api/sales/{id}/cancel`: cancela a venda inteira e preserva seus valores historicos.
+- `PATCH /api/sales/{saleId}/items/{itemId}/cancel`: cancela um item especifico e recalcula o total efetivo da venda com base nos itens ainda ativos.
+
+Correcoes administrativas ou sistemicas, se necessarias em um produto real, deveriam ser modeladas como fluxos especificos e auditaveis, por exemplo endpoints de correcao com motivo e trilha de auditoria, e nao como update amplo da venda.
+
 ## Rodar a API pelo Docker Compose
 
 O compose principal do backend ja aponta para o Dockerfile da WebApi:

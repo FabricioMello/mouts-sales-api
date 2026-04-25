@@ -31,16 +31,6 @@ public class SaleItem : BaseEntity
         Recalculate();
     }
 
-    public void Update(Guid productId, string productName, int quantity, decimal unitPrice)
-    {
-        ProductId = productId;
-        ProductName = productName;
-        Quantity = quantity;
-        UnitPrice = unitPrice;
-
-        Recalculate();
-    }
-
     public void Cancel()
     {
         IsCancelled = true;
