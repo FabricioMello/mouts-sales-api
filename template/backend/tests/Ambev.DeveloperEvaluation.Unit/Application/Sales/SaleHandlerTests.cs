@@ -43,6 +43,7 @@ public class SaleHandlerTests
         await repository.Received(1).CreateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await mediator.Received(1).Publish(Arg.Is<SaleCreatedEvent>(e =>
+            e.SaleId != Guid.Empty &&
             e.SaleNumber == command.SaleNumber &&
             e.CustomerId == command.CustomerId &&
             e.BranchId == command.BranchId &&
