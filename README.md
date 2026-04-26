@@ -1,55 +1,56 @@
 # Mouts Sales API
 
-API desenvolvida para o teste de avaliacao de backend, com foco no dominio de vendas, aplicacao de regras de desconto, cancelamento logico e publicacao de eventos.
+API developed for the backend evaluation challenge, focused on the sales domain, discount rules, logical cancellation, authentication, automated tests, and sales event publishing.
 
-## Objetivo
+## Goal
 
-O projeto implementa uma API para registro e consulta de vendas.
+This project implements an API for creating, querying, and cancelling sales.
 
-Uma venda possui numero, data, cliente, filial, itens, quantidades, precos, descontos, total por item, total da venda e status de cancelamento.
+A sale contains number, date, customer, branch, items, quantities, prices, discounts, item totals, sale total, and cancellation status.
 
-As principais regras de negocio sao:
+Main business rules:
 
-- compras com menos de 4 unidades do mesmo produto nao recebem desconto;
-- compras com 4 a 9 unidades do mesmo produto recebem 10% de desconto;
-- compras com 10 a 20 unidades do mesmo produto recebem 20% de desconto;
-- nao e permitido vender mais de 20 unidades do mesmo produto;
-- uma venda nao pode ter mais de um item com o mesmo `ProductId`;
-- venda cancelada nao e apagada fisicamente;
-- item cancelado recalcula o total efetivo da venda;
-- venda ja cancelada nao pode ser cancelada novamente.
+- purchases with fewer than 4 units of the same product do not receive a discount;
+- purchases with 4 to 9 units of the same product receive a 10% discount;
+- purchases with 10 to 20 units of the same product receive a 20% discount;
+- it is not possible to sell more than 20 units of the same product;
+- a sale cannot contain more than one item with the same `ProductId`;
+- a cancelled sale is not physically deleted;
+- cancelling an item recalculates the effective sale total;
+- an already cancelled sale cannot be cancelled again.
 
-## Decisoes de dominio
+## Domain Decisions
 
-A venda foi tratada como um registro transacional. Por isso, a API nao possui `PUT` amplo nem `DELETE` fisico para vendas.
+Sales were modeled as transactional records. Because of that, the API does not expose a broad `PUT` endpoint or a physical `DELETE` endpoint for sales.
 
-As alteracoes permitidas foram modeladas como operacoes explicitas:
+Allowed changes are explicit business operations:
 
-- cancelar a venda inteira;
-- cancelar um item especifico da venda.
+- cancel the whole sale;
+- cancel a specific sale item.
 
-Essa abordagem preserva historico e evita reescrever uma venda depois que ela foi criada.
+This approach preserves history and avoids rewriting a sale after it has been created.
 
-## Estrutura do projeto
+## Project Structure
 
-O backend esta em:
+The backend is located at:
 
 ```text
 template/backend
 ```
 
-Principais projetos:
+Main projects:
 
 ```text
-src/Ambev.DeveloperEvaluation.Domain       Regras de dominio e entidades
-src/Ambev.DeveloperEvaluation.Application  Casos de uso, validacoes e eventos
-src/Ambev.DeveloperEvaluation.ORM          Persistencia com Entity Framework
-src/Ambev.DeveloperEvaluation.WebApi       Controllers, configuracao HTTP e RabbitMQ
-tests/Ambev.DeveloperEvaluation.Unit       Testes unitarios
-tests/Ambev.DeveloperEvaluation.Integration Testes de integracao
+src/Ambev.DeveloperEvaluation.Domain        Domain rules and entities
+src/Ambev.DeveloperEvaluation.Application   Use cases, validations, and events
+src/Ambev.DeveloperEvaluation.ORM           Entity Framework persistence
+src/Ambev.DeveloperEvaluation.WebApi        Controllers, HTTP setup, and RabbitMQ integration
+tests/Ambev.DeveloperEvaluation.Unit        Unit tests
+tests/Ambev.DeveloperEvaluation.Integration Integration tests with Testcontainers
+tests/Ambev.DeveloperEvaluation.Functional  HTTP functional tests with WebApplicationFactory
 ```
 
-## Tecnologias
+## Technologies
 
 - .NET 8
 - ASP.NET Core
@@ -59,32 +60,33 @@ tests/Ambev.DeveloperEvaluation.Integration Testes de integracao
 - MediatR
 - AutoMapper
 - FluentValidation
+- Serilog
 - xUnit
 - Testcontainers
 - Docker Compose
 
-## Como rodar com Docker
+## Running With Docker
 
-Pre-requisitos:
+Prerequisites:
 
 - Docker Desktop
 - Git
-- Postman ou Insomnia para testes manuais
-- .NET SDK 8, apenas se quiser rodar testes localmente fora do Docker
+- Postman or Insomnia for manual testing
+- .NET SDK 8, only if you want to run tests locally outside Docker
 
-Entre na pasta do backend:
+Go to the backend folder:
 
 ```bash
 cd template/backend
 ```
 
-Suba a aplicacao e as dependencias:
+Start the API and dependencies:
 
 ```bash
 docker compose up -d --build
 ```
 
-A API ficara disponivel em:
+The API will be available at:
 
 ```text
 http://localhost:8080
@@ -102,47 +104,54 @@ RabbitMQ Management:
 http://localhost:15672
 ```
 
-Credenciais do RabbitMQ:
+RabbitMQ credentials:
 
 ```text
-usuario: developer
-senha: ev@luAt10n
+username: developer
+password: ev@luAt10n
 ```
 
-Para parar o ambiente:
+To stop the environment:
 
 ```bash
 docker compose down
 ```
 
-## Como testar manualmente
+To run everything from a clean Docker state:
 
-Foi criada uma collection Postman para facilitar os testes:
+```bash
+docker compose down -v --remove-orphans
+docker compose up -d --build
+```
+
+## Manual Testing
+
+A Postman collection is available at:
 
 ```text
 template/backend/Ambev.DeveloperEvaluation.postman_collection.json
 ```
 
-Importe esse arquivo no Postman ou Insomnia.
+Import this file into Postman or Insomnia.
 
-A collection possui as pastas:
+The collection contains:
 
-- `Auth`, com login e captura automatica do token JWT;
-- `Users`, com criacao, consulta e exclusao de usuario;
-- `Sales`, com listagem, criacao, consulta, cancelamento de item e cancelamento de venda.
+- `Auth`, with login and automatic JWT token capture;
+- `Users`, with user creation, retrieval, and deletion;
+- `Sales`, with sale listing, creation, retrieval, item cancellation, and sale cancellation.
 
-Fluxo sugerido:
+Suggested flow:
 
-1. Execute `Users > Create user`.
-2. Execute `Auth > Login`.
-3. Execute `Sales > Create sale`.
-4. Execute `Sales > Get sale by id`.
-5. Execute `Sales > Cancel sale item`.
-6. Execute `Sales > Cancel sale`.
+1. Run `Users > Create user`.
+2. Run `Auth > Login`.
+3. Run `Sales > Create sale`.
+4. Run `Sales > Get sale by id`.
+5. Run `Sales > Cancel sale item`.
+6. Run `Sales > Cancel sale`.
 
-Apos o login, o token JWT e salvo na variavel `authToken` e usado automaticamente pelos demais requests da collection.
+After login, the JWT token is stored in the `authToken` variable and automatically used by requests that inherit authorization from the collection.
 
-## Endpoints principais
+## Main Endpoints
 
 Auth:
 
@@ -168,23 +177,43 @@ PATCH /api/Sales/{id}/cancel
 PATCH /api/Sales/{saleId}/items/{itemId}/cancel
 ```
 
-## Eventos
+## Events
 
-A API publica eventos de venda via MediatR e RabbitMQ:
+The API creates sales events through MediatR and persists them through a transactional outbox before publishing them to RabbitMQ.
+
+Implemented events:
 
 - `SaleCreatedEvent`
 - `SaleCancelledEvent`
 - `SaleItemCancelledEvent`
 
-O evento `SaleModified` nao foi implementado porque a API nao possui update amplo de venda.
+`SaleModifiedEvent` was not implemented because the API does not expose a broad sale update operation.
 
-## Testes automatizados
+## Automated Tests
 
-Para rodar os testes localmente:
+To run the automated tests locally:
 
 ```bash
 cd template/backend
 dotnet test Ambev.DeveloperEvaluation.sln
 ```
 
-A suite cobre regras de dominio, validadores, handlers de vendas e publicacao de eventos no RabbitMQ usando Testcontainers.
+The test suite covers:
+
+- domain rules and discount calculations;
+- validators and MediatR handlers;
+- API authorization behavior;
+- global exception handling;
+- sales repository behavior against PostgreSQL;
+- outbox persistence;
+- RabbitMQ publishing and resilience;
+- HTTP flows through functional tests.
+
+Current validated result:
+
+```text
+Unit: 109
+Functional: 19
+Integration: 20
+Total: 148 tests passing
+```
