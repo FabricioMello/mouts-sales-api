@@ -73,6 +73,7 @@ public class Program
             }
 
             app.UseMiddleware<GlobalExceptionMiddleware>();
+            app.UseSerilogRequestLogging();
 
             if (app.Environment.IsDevelopment())
             {
