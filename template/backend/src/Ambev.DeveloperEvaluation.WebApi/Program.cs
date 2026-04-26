@@ -6,6 +6,7 @@ using Ambev.DeveloperEvaluation.Common.Security;
 using Ambev.DeveloperEvaluation.Common.Validation;
 using Ambev.DeveloperEvaluation.IoC;
 using Ambev.DeveloperEvaluation.ORM;
+using Ambev.DeveloperEvaluation.WebApi.HealthChecks;
 using Ambev.DeveloperEvaluation.WebApi.Messaging;
 using Ambev.DeveloperEvaluation.WebApi.Middleware;
 using FluentValidation;
@@ -56,9 +57,12 @@ public class Program
             builder.Services.AddValidatorsFromAssembly(typeof(ApplicationLayer).Assembly);
             builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
-            builder.Services.AddSingleton<IEventNotificationPublisher, RabbitMqEventPublisher>();
+            builder.Services.AddSingleton<RabbitMqEventPublisher>();
+            builder.Services.AddSingleton<IEventNotificationPublisher>(sp => sp.GetRequiredService<RabbitMqEventPublisher>());
             builder.Services.AddScoped<OutboxMessageProcessor>();
             builder.Services.AddHostedService<OutboxProcessor>();
+            builder.Services.AddHealthChecks()
+                .AddCheck<RabbitMqHealthCheck>("RabbitMQ", tags: ["readiness"]);
 
             var app = builder.Build();
 
