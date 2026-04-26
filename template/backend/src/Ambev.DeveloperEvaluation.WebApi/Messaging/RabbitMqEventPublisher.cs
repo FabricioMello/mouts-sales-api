@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Ambev.DeveloperEvaluation.Application.Sales.Events.Publishing;
+using Ambev.DeveloperEvaluation.Application.Sales.Events.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
@@ -15,12 +16,6 @@ public sealed class RabbitMqEventPublisher : IEventNotificationPublisher, IAsync
     private readonly bool _isConnected;
 
     private const string ExchangeName = "sales.events";
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
-    };
 
     public RabbitMqEventPublisher(IConfiguration configuration, ILogger<RabbitMqEventPublisher> logger)
     {
@@ -54,7 +49,21 @@ public sealed class RabbitMqEventPublisher : IEventNotificationPublisher, IAsync
         if (!_isConnected || _channel is null)
             return;
 
-        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message, JsonOptions));
+        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message, SalesEventJsonSerializerOptions.Default));
+        await PublishBodyAsync(_channel, eventName, body, cancellationToken);
+    }
+
+    public async Task PublishRawAsync(string eventName, string jsonPayload, CancellationToken cancellationToken = default)
+    {
+        if (!_isConnected || _channel is null)
+            throw new InvalidOperationException("RabbitMQ publisher is not connected");
+
+        var body = Encoding.UTF8.GetBytes(jsonPayload);
+        await PublishBodyAsync(_channel, eventName, body, cancellationToken);
+    }
+
+    private async Task PublishBodyAsync(IChannel channel, string eventName, byte[] body, CancellationToken cancellationToken)
+    {
         var properties = new BasicProperties
         {
             ContentType = "application/json",
@@ -64,7 +73,7 @@ public sealed class RabbitMqEventPublisher : IEventNotificationPublisher, IAsync
         };
 
         var routingKey = $"sale.{eventName}";
-        await _channel.BasicPublishAsync(ExchangeName, routingKey, false, properties, body, cancellationToken);
+        await channel.BasicPublishAsync(ExchangeName, routingKey, false, properties, body, cancellationToken);
         _logger.LogDebug("Published {EventName} to RabbitMQ exchange {Exchange} with routing key {RoutingKey}",
             eventName, ExchangeName, routingKey);
     }

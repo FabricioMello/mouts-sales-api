@@ -57,6 +57,8 @@ public class Program
             builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             builder.Services.AddSingleton<IEventNotificationPublisher, RabbitMqEventPublisher>();
+            builder.Services.AddScoped<OutboxMessageProcessor>();
+            builder.Services.AddHostedService<OutboxProcessor>();
 
             var app = builder.Build();
 
