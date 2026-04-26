@@ -14,13 +14,15 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
     private readonly IMediator _mediator;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CreateSaleHandler> _logger;
 
-    public CreateSaleHandler(ISaleRepository saleRepository, IMapper mapper, IMediator mediator, ILogger<CreateSaleHandler> logger)
+    public CreateSaleHandler(ISaleRepository saleRepository, IMapper mapper, IMediator mediator, IUnitOfWork unitOfWork, ILogger<CreateSaleHandler> logger)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
         _mediator = mediator;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -58,6 +60,8 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
             createdSale.TotalAmount,
             createdSale.Items.Count,
             DateTime.UtcNow), cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return _mapper.Map<SaleResult>(createdSale);
     }

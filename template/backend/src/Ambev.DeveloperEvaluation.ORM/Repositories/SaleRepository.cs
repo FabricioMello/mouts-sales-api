@@ -16,7 +16,6 @@ public class SaleRepository : ISaleRepository
     public async Task<Sale> CreateAsync(Sale sale, CancellationToken cancellationToken = default)
     {
         await _context.Sales.AddAsync(sale, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
         return sale;
     }
 
@@ -80,10 +79,9 @@ public class SaleRepository : ISaleRepository
         return (items, totalCount);
     }
 
-    public async Task<Sale> UpdateAsync(Sale sale, CancellationToken cancellationToken = default)
+    public Task<Sale> UpdateAsync(Sale sale, CancellationToken cancellationToken = default)
     {
         _context.Sales.Update(sale);
-        await _context.SaveChangesAsync(cancellationToken);
-        return sale;
+        return Task.FromResult(sale);
     }
 }

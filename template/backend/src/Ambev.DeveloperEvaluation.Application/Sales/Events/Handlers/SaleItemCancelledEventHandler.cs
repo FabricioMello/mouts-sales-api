@@ -1,5 +1,8 @@
+using System.Text.Json;
 using Ambev.DeveloperEvaluation.Application.Sales.Events.Notifications;
-using Ambev.DeveloperEvaluation.Application.Sales.Events.Publishing;
+using Ambev.DeveloperEvaluation.Application.Sales.Events.Serialization;
+using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -8,12 +11,12 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.Events.Handlers;
 public class SaleItemCancelledEventHandler : INotificationHandler<SaleItemCancelledEvent>
 {
     private readonly ILogger<SaleItemCancelledEventHandler> _logger;
-    private readonly IEventNotificationPublisher _publisher;
+    private readonly IOutboxRepository _outboxRepository;
 
-    public SaleItemCancelledEventHandler(ILogger<SaleItemCancelledEventHandler> logger, IEventNotificationPublisher publisher)
+    public SaleItemCancelledEventHandler(ILogger<SaleItemCancelledEventHandler> logger, IOutboxRepository outboxRepository)
     {
         _logger = logger;
-        _publisher = publisher;
+        _outboxRepository = outboxRepository;
     }
 
     public async Task Handle(SaleItemCancelledEvent notification, CancellationToken cancellationToken)
@@ -27,6 +30,8 @@ public class SaleItemCancelledEventHandler : INotificationHandler<SaleItemCancel
             notification.SaleNumber,
             notification.NewSaleTotal);
 
-        await _publisher.PublishAsync(nameof(SaleItemCancelledEvent), notification, cancellationToken);
+        var payload = JsonSerializer.Serialize(notification, SalesEventJsonSerializerOptions.Default);
+        var outboxMessage = new OutboxMessage(nameof(SaleItemCancelledEvent), payload, notification.OccurredAt);
+        await _outboxRepository.AddAsync(outboxMessage, cancellationToken);
     }
 }

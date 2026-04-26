@@ -13,13 +13,15 @@ public class CancelSaleHandler : IRequestHandler<CancelSaleCommand, SaleResult>
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
     private readonly IMediator _mediator;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CancelSaleHandler> _logger;
 
-    public CancelSaleHandler(ISaleRepository saleRepository, IMapper mapper, IMediator mediator, ILogger<CancelSaleHandler> logger)
+    public CancelSaleHandler(ISaleRepository saleRepository, IMapper mapper, IMediator mediator, IUnitOfWork unitOfWork, ILogger<CancelSaleHandler> logger)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
         _mediator = mediator;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -38,6 +40,8 @@ public class CancelSaleHandler : IRequestHandler<CancelSaleCommand, SaleResult>
             cancelledSale.Id,
             cancelledSale.SaleNumber,
             DateTime.UtcNow), cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return _mapper.Map<SaleResult>(cancelledSale);
     }
