@@ -20,6 +20,12 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        if (!Request.Headers.TryGetValue("Authorization", out var authorization) ||
+            !authorization.ToString().StartsWith($"{SchemeName} ", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),

@@ -42,6 +42,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             DELETE FROM "OutboxMessages";
             DELETE FROM "SaleItems";
             DELETE FROM "Sales";
+            DELETE FROM "Users";
             """);
     }
 

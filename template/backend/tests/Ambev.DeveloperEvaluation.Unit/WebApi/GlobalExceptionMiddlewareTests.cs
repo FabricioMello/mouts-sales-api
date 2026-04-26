@@ -49,6 +49,17 @@ public class GlobalExceptionMiddlewareTests
         Assert.Equal(StatusCodes.Status409Conflict, context.Response.StatusCode);
     }
 
+    [Fact(DisplayName = "KeyNotFoundException should return 404")]
+    public async Task Given_KeyNotFoundException_When_InvokeAsync_Then_ShouldReturn404()
+    {
+        var middleware = CreateMiddleware(_ => throw new KeyNotFoundException("User not found"));
+        var context = CreateHttpContext();
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
+    }
+
     [Fact(DisplayName = "DomainException should return 400")]
     public async Task Given_DomainException_When_InvokeAsync_Then_ShouldReturn400()
     {

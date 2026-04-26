@@ -45,6 +45,14 @@ public class GlobalExceptionMiddleware
                 Message = ex.Message
             });
         }
+        catch (KeyNotFoundException ex)
+        {
+            await HandleExceptionAsync(context, StatusCodes.Status404NotFound, new ApiResponse
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
         catch (BusinessRuleViolationException ex)
         {
             await HandleExceptionAsync(context, StatusCodes.Status409Conflict, new ApiResponse

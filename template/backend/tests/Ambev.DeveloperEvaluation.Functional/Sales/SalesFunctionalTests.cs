@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Ambev.DeveloperEvaluation.Functional.Fixtures;
@@ -21,6 +22,8 @@ public class SalesFunctionalTests : IClassFixture<CustomWebApplicationFactory>, 
     {
         _factory = factory;
         _client = factory.CreateClient();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue(TestAuthHandler.SchemeName, "functional-test");
     }
 
     public async Task InitializeAsync()
@@ -51,6 +54,16 @@ public class SalesFunctionalTests : IClassFixture<CustomWebApplicationFactory>, 
         Assert.Equal(request.SaleNumber, body.Data.SaleNumber);
         Assert.Equal(116m, body.Data.TotalAmount);
         Assert.Equal(2, body.Data.Items.Count);
+    }
+
+    [Fact(DisplayName = "GET /api/Sales should return unauthorized without token")]
+    public async Task Given_NoAuthentication_When_ListSales_Then_ShouldReturnUnauthorized()
+    {
+        using var anonymousClient = _factory.CreateClient();
+
+        var response = await anonymousClient.GetAsync("/api/Sales");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact(DisplayName = "POST /api/Sales should return conflict when sale number already exists")]
