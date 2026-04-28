@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - "feature/**"
+      - "release/**"
+      - "hotfix/**"
+  pull_request:
+
+jobs:
+  build-test:
+    name: Build, test and coverage
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: template/backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Show Docker version
+        run: docker version
+
+      - name: Restore
+        run: dotnet restore Ambev.DeveloperEvaluation.sln
+
+      - name: Build
+        run: dotnet build Ambev.DeveloperEvaluation.sln --configuration Release --no-restore
+
+      - name: Test with coverage
+        run: >
+          dotnet test Ambev.DeveloperEvaluation.sln
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --collect:"XPlat Code Coverage"
+          --results-directory TestResults
+
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate coverage report
+        run: >
+          reportgenerator
+          "-reports:TestResults/**/coverage.cobertura.xml"
+          "-targetdir:TestResults/CoverageReport"
+          "-reporttypes:Html;Cobertura;MarkdownSummaryGithub;TextSummary"
+          "-assemblyfilters:+Ambev.DeveloperEvaluation.*;-Ambev.DeveloperEvaluation.Unit;-Ambev.DeveloperEvaluation.Integration;-Ambev.DeveloperEvaluation.Functional"
+          "-classfilters:-Ambev.DeveloperEvaluation.ORM.Migrations.*"
+
+      - name: Add coverage summary to job
+        run: cat TestResults/CoverageReport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Enforce coverage threshold
+        env:
+          COVERAGE_THRESHOLD: "80"
+        run: |
+          line_coverage=$(grep -E "Line coverage:" TestResults/CoverageReport/Summary.txt | head -n 1 | awk '{ gsub("%", "", $3); print $3 }')
+          echo "Line coverage: ${line_coverage}%"
+          awk "BEGIN { exit !(${line_coverage} >= ${COVERAGE_THRESHOLD}) }"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: template/backend/TestResults
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: template/backend/TestResults/CoverageReport
